@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guida Interattiva alla Scelta della Residenza in Salento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Salento Serenity (Warm Neutrals: #FDFBF8, #F5F5F4, #E7E5E4; Accent: #0A2342 - Navy Blue) -->
+    <!-- Application Structure Plan: L'applicazione è strutturata per presentare un catalogo di città salentine. Ogni città è visualizzata con una card riassuntiva che include i suoi valori fissi per tranquillità, vicinanza al mare, servizi e costo abitazioni. Cliccando su una card si apre una modale con i dettagli della città, inclusa una descrizione, pro/contro e un grafico radar per un'analisi visiva immediata dei suoi attributi su una scala da 1 a 10. Questa struttura permette all'utente di esplorare le località e confrontarle visivamente in base ai criteri predefiniti. -->
+    <!-- Visualization & Content Choices: Dati -> I punteggi di tranquillità, vicinanza al mare, servizi e costo abitazioni sono fissi per ogni città, su una scala da 1 a 10. Obiettivo -> Fornire una panoramica chiara e comparabile delle caratteristiche di ogni città. Metodo di Presentazione -> Le card delle città mostrano i valori numerici chiave. Un grafico radar (Chart.js) nella modale di dettaglio visualizza questi 4 punteggi. Giustificazione -> Il grafico radar è ideale per mostrare il profilo di una città su molteplici variabili, offrendo un confronto visivo istantaneo. Interazione -> La navigazione avviene tramite click sulle card per aprire la modale di dettaglio. Libreria -> Chart.js per il grafico. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm off-white */
+            color: #374151;
+        }
+        .header-title {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Solid Navy Blue for the header */
+        .header-bg-solid {
+            background-color: #0A2342; /* A deep, rich navy blue */
+        }
+        .accent-text { color: #155e75; } /* Cyan-800 for text contrast */
+        .accent-border { border-color: #155e75; } /* Cyan-800 for border contrast */
+        .secondary-bg { background-color: #F5F5F4; } /* Light warm grey */
+        .card-shadow { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07); }
+        .slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #52796F;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type='range']::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #52796F;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type='range']::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #52796F;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #52796F;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="header-bg-solid text-white text-center py-8 px-4">
+        <h1 class="text-3xl md:text-5xl font-bold header-title">REPORT X MICKY</h1>
+        <p class="mt-2 md:text-lg max-w-3xl mx-auto">La mia selezione dei luoghi più belli dove vivere in Salento</p>
+        <div class="mt-6 max-w-3xl mx-auto text-sm text-gray-100">
+            <h3 class="font-bold text-lg mb-2">Le Due Anime Costiere: Ionio vs. Adriatico</h3>
+            <p class="mb-2">Il Salento è bagnato da due mari distinti: lo Ionio a ovest e l'Adriatico a est. </p>
+            <div class="text-left mb-2">
+                <h4 class="font-semibold text-base mb-1 italic">Costa Ionica (Ovest):</h4>
+                <ul class="list-disc list-inside ml-4">
+                    <li>Vaste spiagge di sabbia bianco-dorata.</li>
+                    <li>Acque azzurre trasparenti, generalmente basse e calme.</li>
+                    <li>Ideale per famiglie e per chi cerca condizioni di balneazione tranquille.</li>
+                    <li>Famosa per i suoi tramonti spettacolari.</li>
+                </ul>
+            </div>
+            <div class="text-left">
+                <h4 class="font-semibold text-base mb-1 italic">Costa Adriatica (Est):</h4>
+                <ul class="list-disc list-inside ml-4">
+                    <li>Paesaggio più vario e aspro.</li>
+                    <li>Include drammatiche grotte carsiche e imponenti scogliere di gesso.</li>
+                    <li>Offre calette rocciose nascoste intervallate da alcune spiagge.</li>
+                    <li>Caratterizzata da un mare dai colori intensi e fondali più profondi.</li>
+                </ul>
+            </div>
+            <p class="mt-4">Un aspetto fondamentale è l'influenza del vento: se il vento proviene da nord o est, il mare Ionio sarà più calmo. Al contrario, se il vento soffia da sud o ovest, il mare Adriatico sarà generalmente più tranquillo. Questa dinamica assicura la possibilità di trovare quasi sempre una spiaggia con acqua calma e limpida.</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <section id="recommendations">
+            <div class="mb-8 p-4 secondary-bg rounded-xl card-shadow">
+                <h3 class="text-xl font-bold mb-3 accent-text">Legenda Caratteristiche:</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-gray-700">
+                    <div>🕊️ Tranquillità: 1 = Poca, 10 = Molta</div>
+                    <div>🌊 Vicinanza al Mare: 1 = Lontano, 10 = Vicino</div>
+                    <div>🛍️ Servizi: 1 = Pochi, 10 = Molti</div>
+                    <div>💶 Costo Abitazioni: 1 = Basso, 10 = Alto</div>
+                </div>
+            </div>
+            <h2 class="text-2xl font-bold mb-6 accent-text text-center">Esplora le Città Salentine</h2>
+            <div id="cities-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+        </section>
+
+        <section class="mt-12 p-6 secondary-bg rounded-xl card-shadow">
+            <h2 class="text-2xl font-bold mb-4 accent-text">Considerazioni finali</h2>
+            <p class="text-gray-700 mb-4">
+                Questo è un piccolo riassunto delle città che, secondo la nostra analisi, sono più interessanti per le tue esigenze.
+                Opzioni come Matino, Parabita e Tuglie possono rappresentare una buona qualità/prezzo e vicinanza al mare,
+                con un buon mix tra persone del luogo e residenti che vengono dall'estero.
+            </p>
+            <p class="text-gray-700 mb-4">
+                A Nardò, così come a Galatina e a Lecce, avrai più servizi, ma ovviamente saranno luoghi meno tranquilli ed entrando nei ristoranti sentirai sicuramente parlare inglese e meno italiano. Tutto dipende da quali sono i tuoi compromessi.
+            </p>
+            <p class="text-gray-700 italic font-semibold">
+                La cosa bella dell'area del Salento è che con la macchina puoi spostarti facilmente da un posto all'altro.
+                Quindi, puoi facilmente prendere una casa a Galatina e andare al ristorante a Nardò, avere una casa a Matino e prendere il caffè a Parabita e così via.
+                Molte volte solo 10-15 minuti in auto separano due città, in questo modo è molto più facile scegliere e godere di tutto ciò che il Salento ha da offrire.
+            </p>
+        </section>
+
+    </main>
+    
+    <div id="cityModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div class="modal-content secondary-bg rounded-xl card-shadow w-full max-w-4xl max-h-[90vh] overflow-y-auto transform scale-95">
+            <div class="sticky top-0 secondary-bg p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-2xl font-bold accent-text"></h3>
+                <button id="closeModal" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <div class="chart-container">
+                            <canvas id="cityChart"></canvas>
+                        </div>
+                        <div id="modalScores" class="text-center mt-4 text-sm text-gray-600"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold mb-2">In Sintesi</h4>
+                        <p id="modalDescription" class="mb-4 text-gray-700"></p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="font-semibold text-green-700 mb-2">Pro</h5>
+                                <ul id="modalPros" class="list-disc list-inside space-y-1 text-gray-700"></ul>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-red-700 mb-2">Contro</h5>
+                                <ul id="modalCons" class="list-disc list-inside space-y-1 text-gray-700"></ul>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a id="wikipediaLink" href="#" target="_blank" class="text-blue-600 hover:underline font-semibold">Leggi la pagina di Wikipedia</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const citiesData = [
+            {
+                id: 'matino',
+                name: 'Matino',
+                scores: { tranquility: 7, sea: 7, services: 5 },
+                short_desc: 'Borgo autentico e tranquillo, vicino alla costa ionica. Offre un ottimo equilibrio tra tranquillità, vicinanza al mare e servizi, ideale per chi cerca un mix autentico.',
+                full_desc: `Posizione & Vicinanza al Mare: Matino è una città affascinante situata nel cuore del Salento meridionale, tra le Serre Salentine. Si trova a circa 10 km dalla costa ionica, con spiagge come Punta della Suina (11 km), Marina di Mancaversa (15 km) e Gallipoli (16 km) facilmente raggiungibili. Anche la costa adriatica è accessibile. Tranquillità & Atmosfera: Matino è descritta come un "borgo autentico d'Italia", che ha mantenuto la sua essenza e autenticità. È considerata una destinazione perfetta per chi cerca una vacanza "rilassante e allo stesso tempo autentica", desiderando "vivere la tranquillità dei borghi senza rinunciare al mare". Il suo centro storico, ben conservato, è caratterizzato da cortili, vicoli e strade apparentemente senza uscita, che nascondono percorsi di fuga fantasiosi. Comunità & Servizi Essenziali: Il centro storico è vicino a servizi essenziali come tabaccai, alimentari, bar, banche. La tradizione agricola locale si riflette negli aromi e sapori delle prelibatezze locali. La città ospita diverse chiese storiche con valore artistico. È collegata da autobus a Gallipoli, Parabita, Casarano e Maglie. Livello Turistico & Impatto: Matino ha visto un "significativo aumento del turismo negli ultimi anni", ma è ancora considerata un luogo autentico e tranquillo. Non è descritta come un centro di turismo di massa.`,
+                pros: ["Offre alta tranquillità e autenticità", "Vicinanza alla costa ionica con varie spiagge", "Un centro storico ben conservato con servizi essenziali e una forte community che ti farà sentire a tuo agio e in compagnia per tutto l’anno", "Questa città ha il giusto mix tra tradizione, cultura e persone interessanti.", "Pochi locali ma è vicino ad altri luoghi come Parabita e Gallipoli che hanno tanti ristoranti e locali e quindi con 15 minuti di macchina si può raggiungere un'ampia gamma di luoghi"],
+                cons: ["L'aumento del turismo potrebbe, a lungo termine, influenzare la sua tranquillità. Per ora la situazione rappresenta un perfetto mix tra turisti e residenti."],
+                housing_price_rating: "7/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Matino",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Matino"
+            },
+            {
+                id: 'parabita',
+                name: 'Parabita',
+                scores: { tranquility: 8, sea: 7, services: 5 },
+                short_desc: 'Una gemma nascosta che offre un\'esperienza autentica, lontano dal trambusto turistico, con architettura pittoresca e vicinanza allo Ionio. Ottima per un mix di tranquillità, mare e costi contenuti.',
+                full_desc: `Posizione & Vicinanza al Mare: Parabita è una città affascinante situata nel cuore del Salento meridionale, tra le Serre Salentine. Si trova a circa 10 km dalla costa ionica, con spiagge come Punta della Suina (11 km), Marina di Mancaversa (15 km) e Gallipoli (16 km) facilmente raggiungibili. Anche la costa adriatica è accessibile. Tranquillità & Atmosfera: È descritta come una "gemma nascosta dove i viaggiatori possono sperimentare la vita italiana autentica lontano dal trambusto dei luoghi turistici". Questo suggerisce un'atmosfera tranquilla e meno affollata. Comunità & Servizi Essenziali: La città è adornata da una "bellissima architettura, strade pittoresche e un'atmosfera accogliente". Vanta edifici storici, molti dei quali risalgono al XVI secolo, e la Chiesa di Santa Maria della Purità. La campagna circostante è costellata di uliveti e vigneti. Sono disponibili diverse opzioni di alloggio, inclusi agriturismi e boutique hotel con servizi moderni. Livello Turistico & Impatto: Parabita è "spesso oscurata dai suoi vicini più famosi", il che contribuisce al suo status di "gemma nascosta" e al suo carattere meno turistico.`,
+                pros: ["Offre un'esperienza autentica e tranquilla, ricca di storia e cultura", "Con un'atmosfera accogliente e vicinanza alle spiagge ioniche e un bel senso di community", "È facile incontrare persone autoctone o da altre parti del globo", "La città ha diversi locali e ristoranti"],
+                cons: ["L'aumento del turismo potrebbe, a lungo termine, influenzare la sua tranquillità. Per ora la situazione rappresenta un perfetto mix tra turisti e residenti."],
+                housing_price_rating: "6.5/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Parabita",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Parabita"
+            },
+            {
+                id: 'tuglie',
+                name: 'Tuglie',
+                scores: { tranquility: 8, sea: 8, services: 5 },
+                short_desc: 'Immersa nella tranquillità della campagna salentina, ben servita da attività locali ma più distante dal mare rispetto ad altre città dell\'entroterra.',
+                full_desc: `Posizione & Vicinanza al Mare: Tuglie si trova nella provincia di Lecce. Le informazioni disponibili non specificano la sua esatta distanza dal mare, ma la menzione di "vivere immersi nella tranquillità e bellezza della campagna salentina" suggerisce una posizione nell'entroterra. È molto vicina al centro di Tuglie. Tranquillità & Atmosfera: La città è fortemente associata alla "tranquillità e bellezza della campagna salentina". Le proprietà in vendita sono descritte come "immerse nella tranquillità". Comunità & Servizi Essenziali: Tuglie è descritta come un'area "molto centrale, vicina al centro storico e servita da ogni tipo di attività". Un hotel locale offre servizi come Wi-Fi, concierge e strutture per la pesca e un parco acquatico. Livello Turistico & Impatto: Le informazioni non indicano un alto livello di turismo di massa, suggerendo che mantenga un'atmosfera locale e tranquilla.`,
+                pros: ["Offre un'elevata tranquillità e un'atmosfera rurale", "Pur essendo ben servita da attività locali", "C’è una bella community e non ci si annoia anche fuori dalla stagione", "Fortunatamente è vicina al mare.", "La città ha diverse ottime pasticcerie."],
+                cons: ["Non si è ancora completamente sviluppata quindi potrebbe presentare alcune piccole carenze."],
+                housing_price_rating: "6/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Tuglie",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Tuglie"
+            },
+            {
+                id: 'lecce',
+                name: 'Lecce',
+                scores: { tranquility: 4, sea: 5, services: 10 },
+                short_desc: 'Capoluogo del Salento e hub culturale, offre servizi completi e una vivace vita notturna, ma è più caotica e distante dal mare.',
+                full_desc: `Posizione & Vicinanza al Mare: In quanto città principale del Salento, Lecce si trova nell'entroterra ma occupa una posizione strategicamente centrale tra il mare Adriatico e lo Ionio. Sebbene non sia direttamente sulla costa, è ben collegata; e varie linee di autobus collegano Lecce alle principali aree costiere come Otranto, Gallipoli e Porto Cesareo. Tranquillità & Atmosfera: Lecce è descritta come "estremamente vivace" e vanta una "vivace passeggiata", indicando un ambiente urbano dinamico. Possiede le caratteristiche di una città fusa con i vantaggi di un piccolo centro. Comunità & Servizi Essenziali: Con una popolazione di circa 95.000 abitanti, Lecce è un centro urbano significativo. Il suo centro è "brulicante di luoghi di incontro all'aperto e club, pullulante di una folla giovane che si gode la vita notturna". La gente del posto è nota per il suo "atteggiamento rilassato e accogliente". Lecce offre servizi eccellenti e completi, e dista solo 38k dall’ aereoporto di Brindisi, rendendola più accessibile. Livello Turistico & Impatto: Lecce è una delle principali destinazioni turistiche, spesso affettuosamente soprannominata "la Firenze del Sud" per la sua distintiva architettura barocca. Nonostante la sua popolarità, le sue dimensioni considerevoli le consentono di mantenere una vita locale forte e vivace tutto l'anno, sebbene alcune aree possano sembrare una "città fantasma" durante il tradizionale riposo pomeridiano.`,
+                pros: ["Funge da hub centrale per servizi essenziali e trasporti", "Vanta una ricca storia e una splendida architettura barocca", "Offre una vivace scena culturale e notturna", "Presenta una gastronomia diversificata", "È una buona base per esplorare la più ampia regione del Salento."],
+                cons: ["Meno tranquilla delle città più piccole", "Può essere più costosa delle città salentine più piccole", "Sperimenta periodi di quiete durante la tradizionale pausa pomeridiana."],
+                housing_price_rating: "9/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Lecce",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Lecce"
+            },
+            {
+                id: 'gallipoli',
+                name: 'Gallipoli',
+                scores: { tranquility: 1, sea: 10, services: 6 },
+                short_desc: 'Perla dello Ionio con spiagge stupende, ma estremamente turistica e caotica in estate, con una dicotomia stagionale molto marcata.',
+                full_desc: `Posizione & Vicinanza al Mare: Una destinazione affascinante situata sulla costa ionica occidentale del Salento. È rinomata per le sue "lunghe spiagge sabbiose e acque trasparenti". Le spiagge vicine degne di nota includono Punta della Suina (a circa 11 km da Matino, che è vicino a Gallipoli) e Baia Verde. Tranquillità & Atmosfera: Sebbene vanti un "ambiente sereno", Gallipoli presenta anche una "vivace vita di strada" e una "fantastica vita notturna" durante i mesi estivi. Può diventare "troppo caotica, soprattutto ad agosto", a causa del'afflusso di turisti. Comunità & Servizi Essenziali: Il centro storico si trova su una piccola isola, collegata alla terraferma da un ponte del XVII secolo. Durante l'estate, caffè, bar e ristoranti si estendono sui marciapiedi, creando un'atmosfera vivace. La città offre una "vasta gamma di strutture e servizi per vacanze brevi o lunghe", adatti a varie esigenze. Le sue opzioni di intrattenimento la rendono adatta a famiglie e adolescenti. Gallipoli è collegata da linee di autobus ad altre città importanti come Maglie e Lecce. Livello Turistico & Impatto: Gallipoli è una delle città più popolari e visitate del Salento. La sua popolazione può aumentare drasticamente durante i mesi di alta stagione estiva (luglio-agosto), portando a un caos e un sovraffollamento significativi. La vita notturna è un'attrazione importante durante questo periodo.`,
+                pros: ["Vanta splendide spiagge ioniche", "Offre una vivace vita notturna e diverse opzioni di ristorazione in estate", "Possiede una ricca storia e un'architettura affascinante", "Fornisce buoni servizi e comfort durante l'alta stagione."],
+                cons: ["Diventa estremamente turistica e affollata in estate (specialmente luglio-agosto), influenzando significativamente la tranquillità", "Può perdere parte del suo autentico carattere locale durante la stagione turistica di punta. Inverno invece la città diventa quasi deserta con meno attrazioni, comunque mantenendo il suo fascino tipico."],
+                housing_price_rating: "8/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Gallipoli",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Gallipoli"
+            },
+            {
+                id: 'nardo',
+                name: 'Nardò',
+                scores: { tranquility: 3, sea: 7, services: 9 },
+                short_desc: 'Autentica e tranquilla, a 5km dal mare, rappresenta un equilibrio ideale tra pace, cultura e facile accesso a entrambe le coste.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata nell'entroterra, a circa 5 km dal mare. Beneficia della vicinanza alla pineta protetta di Porto Selvaggio, nota per la sua bellezza naturale. Le aree costiere vicine includono Santa Maria al Bagno e Torre Lapillo. Tranquillità & Atmosfera: Nardò è una bella città, meno turistica di Gallipoli e con fascino autentico, possiede una "vibrazione speciale". Offre opportunità per "passeggiate tranquille" ed è descritta come "tranquilla e intima". Comunità & Servizi Essenziali: La gente del posto è caratterizzata come "incondizionatamente calda e accogliente". Un aspetto unico è la sua "stravagante comunità di stranieri, specialmente nel centro storico", che si integra bene con la popolazione locale. Nardò è un "paradiso gastronomico" con cibo locale delizioso, spesso pescato dalle acque vicine. La città ospita una varietà di eventi culturali locali, mostre, festival musicali e cinematografici. È riconosciuta come una buona base per l'esplorazione culturale all'interno dell'entroterra salentino. Sono disponibili collegamenti in autobus per Santa Maria al Bagno e Santa Caterina. Livello Turistico & Impatto: Nardò è meno influenzata dal turismo di massa rispetto a Gallipoli, in gran parte grazie alla sua leggera distanza (5 km) dalla costa immediata, che è considerata la sua "benedizione". È considerata una destinazione per tutto l'anno.`,
+                pros: ["Offre alta tranquillità", "Una comunità locale genuina e accogliente", "Cucina eccellente", "Splendida architettura e stretta vicinanza a parchi naturali (Porto Selvaggio) e mari limpidi", "Funziona bene come destinazione per tutto l'anno."],
+                cons: ["Non direttamente sul mare, il che significa che è necessaria una breve guida per l'accesso alla spiaggia", "Ha meno servizi balneari immediati rispetto alle città costiere dirette. Le spiaggie più belle (quelle nell’area di Gallipoli) sono distanti, mentre le spiaggie vicine al luogo sono piene specialmente sabato e domenica.", "A volte può sembrare molto turistica ma è ottima se vuoi un centro attivo ma più piccolo di Lecce."],
+                housing_price_rating: "8/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Nard%C3%B2",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Nardo"
+            },
+            {
+                id: 'galatina',
+                name: 'Galatina',
+                scores: { tranquility: 5, sea: 5, services: 7 },
+                short_desc: 'Città dell\'entroterra sottovalutata, ricca di storia e arte, con buoni servizi e una posizione centrale per esplorare tutta la regione.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata a circa 30 km a sud di Lecce. È centralmente posizionata nel Salento, a pochi chilometri sia dal mare Ionio che dall'Adriatico. La città è facilmente raggiungibile in auto o in treno da Lecce. Tranquillità & Atmosfera: Galatina è descritta come "enormemente sottovalutata e sottosviluppata come centro turistico", suggerendo un ambiente più tranquillo, libero da grandi folle di turisti. Il suo centro storico è notato come "piuttosto straordinario". Comunità & Servizi Essenziali: Con una popolazione di circa 28.000 abitanti, è una delle città più grandi dell'entroterra. È ben mantenuta e pulita, vantando un eccellente servizio di informazioni turistiche. Offre buon cibo a prezzi moderati. La sua principale attrazione è la Basilica di Santa Caterina d'Alessandria, nota per i suoi sorprendenti affreschi del XV secolo, che ne evidenziano il ricco patrimonio culturale. Piazza Alighieri offre un'area centrale con caffè e una grande pizzeria. Sono disponibili collegamenti in autobus per Gallipoli e Galatone. Livello Turistico & Impatto: Galatina è generalmente oscurata da destinazioni turistiche più famose come Lecce, Otranto e Gallipoli, il che contribuisce alla sua atmosfera meno turistica. Attira i visitatori principalmente per i suoi eventi culturali e il suo legame con il festival "La Notte della Taranta".`,
+                pros: ["Offre un'autentica esperienza salentina, ricca di storia e architettura", "Fornisce buoni servizi per le sue dimensioni", "Beneficia di una posizione centrale ideale per esplorare entrambe le coste ed è meno turistica, offrendo un buon rapporto qualità-prezzo."],
+                cons: ["Non direttamente sul mare, richiedendo un viaggio in auto per l'accesso alla spiaggia", "Potrebbe avere meno servizi moderni rispetto a città più grandi come Lecce."],
+                housing_price_rating: "7/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Galatina",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Galatina"
+            },
+            {
+                id: 'galatone',
+                name: 'Galatone',
+                scores: { tranquility: 6, sea: 6, services: 6 },
+                short_desc: 'Borgo autentico d\'Italia, offre tranquillità a pochi km dalla costa ionica, con tutti i servizi di base e un vivace spirito estivo.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata nella parte centro-occidentale della penisola salentina, Galatone si affaccia sulla costa ionica attraverso località specifiche come Montagna Spaccata e La Reggia. Dista circa 10-15 km dal mare. La città è convenientemente situata a 13 km da Gallipoli e 24 km da Lecce. Tranquillità & Atmosfera: Galatone è riconosciuta come uno dei "Borghi Autentici d'Italia". È spesso scelta da turisti che cercano "località insolite, autentiche e meno turistiche", ed è descritta come un "angolo di tranquillità in un tipico centro storico salentino". Comunità & Servizi Essenziali: La città è indicata come "completa di tutti i servizi". Durante i mesi estivi, Galatone e le città circostanti ospitano numerosi concerti all'aperto, festival e mercati, indicando un vivace spirito comunitario. I proprietari di immobili locali possono offrire supporto aggiuntivo, come pacchetti di benvenuto con cibo. Sono disponibili collegamenti in autobus per Gallipoli e Galatina. Livello Turistico & Impatto: Mantiene l'autenticità grazie al fatto di essere meno turistica rispetto ai principali hub costieri. Sebbene l'estate porti festival ed eventi, non è caratterizzata dal turismo di massa di luoghi come Gallipoli o Otranto.`,
+                pros: ["Offre un'autentica atmosfera di paese", "Una buona gamma di servizi", "È convenientemente vicina alle spiagge ioniche (10-15 km)", "Vanta una ricca storia e mantiene un'atmosfera tranquilla."],
+                cons: ["Non direttamente sul mare, richiedendo un viaggio in auto per l'accesso alla spiaggia. La community cittadina non è molto bella, può essere soggetta piccoli furti."],
+                housing_price_rating: "6/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Galatone",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Galatone"
+            },
+            {
+                id: 'otranto',
+                name: 'Otranto',
+                scores: { tranquility: 1, sea: 10, services: 6 },
+                short_desc: 'Gioiello della costa adriatica con una storia ricca e un mare stupendo, ma molto affollata e costosa durante l\'estate.',
+                full_desc: `Posizione & Vicinanza al Mare: Una pittoresca città di mare situata sulla costa adriatica, che segna l'estremità orientale dell'Italia. Si trova a circa 46 km a sud-est di Lecce. Otranto presenta una "discreta spiaggia cittadina" ed è in prossimità di molte altre eccellenti spiagge lungo la costa adriatica. Tranquillità & Atmosfera: Sebbene affascinante, la popolazione di Otranto di 5.000 abitanti può quasi triplicare durante i mesi estivi, indicando un significativo cambiamento stagionale da tranquilla a vivace e affollata. Comunità & Servizi Essenziali: La città vanta un grazioso centro storico e numerosi buoni ristoranti. La sua spiaggia cittadina, Spiaggetta del Molo, è un popolare luogo di ritrovo per la gente del posto. Offre una vasta gamma di attività tra cui gite in barca, snorkeling, immersioni, trekking costieri, ciclismo e vari eventi culturali. Ben collegata dagli autobus, con linee per Lecce, Santa Cesarea Terme, Castro e Santa Maria di Leuca. Livello Turistico & Impatto: Otranto è molto turistica e soggetta a diventare sovraffollata e costosa durante la stagione estiva. È riconosciuta come una delle principali destinazioni turistiche del Salento.`,
+                pros: ["Vanta una splendida costa adriatica", "Una ricca storia", "Una comoda spiaggia cittadina e un'atmosfera vivace in estate", "Serve come un'ottima base per esplorare la costa adriatica."],
+                cons: ["Diventa molto turistica e significativamente affollata in estate (specialmente luglio-agosto), influenzando significativamente la tranquillità", "Può anche essere più costosa durante questi periodi."],
+                housing_price_rating: "10/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Otranto",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Otranto"
+            },
+            {
+                id: 'cutrofiano',
+                name: 'Cutrofiano',
+                scores: { tranquility: 10, sea: 2, services: 2 },
+                short_desc: 'Città dell\'entroterra con un forte focus sulla vita locale e i prodotti tipici, garantisce tranquillità e un accesso strategico a entrambe le coste.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata nell'entroterra salentino. Dista circa 20 km dal mare di Gallipoli sulla costa ionica. La sua posizione centrale è strategica per raggiungere rapidamente diverse località balneari sia sul versante ionico (35 minuti di auto) che su quello adriatico (20 minuti di auto) del Salento. Dista circa 28,7-31 km da Lecce. Tranquillità & Atmosfera: La sua posizione nell'entroterra e la minore enfasi turistica nelle informazioni suggeriscono un alto grado di tranquillità. Vi è un'attenzione ai prodotti locali e a una dieta sana, indicando uno stile di vita più radicato e pacifico. Comunità & Servizi Essenziali: Ospita esercizi commerciali locali come "La Puteka", un supermercato noto per prodotti naturali di alta qualità. Il centro del paese (a circa 2 km da alcune proprietà) fornisce "tutti i servizi, supermercati, tabaccai, farmacie, bar, ristoranti, pizzerie, banche, ecc.". Ha collegamenti in autobus con Lecce. Livello Turistico & Impatto: Non è evidenziata come un importante hub turistico, il che implica un'esperienza locale più autentica e meno influenzata dalla stagionalità.`,
+                pros: ["Offre alta tranquillità", "Una buona gamma di servizi locali essenziali", "Una posizione centrale strategica per accedere a entrambe le coste ionica e adriatica", "Una vita locale autentica con un focus sul cibo fresco e locale."],
+                cons: ["Non direttamente sul mare, richiedendo un viaggio in auto per l'accesso alla spiaggia", "I collegamenti con i mezzi pubblici per le spiagge possono essere limitati, specialmente fuori stagione. E’ un centro molto piccolo e può diventare facilmente noioso e suscitare una sensazione di isolamento."],
+                housing_price_rating: "4/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Cutrofiano",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Cutrofiano"
+            },
+            {
+                id: 'maglie',
+                name: 'Maglie',
+                scores: { tranquility: 5, sea: 3, services: 8 },
+                short_desc: 'Gemma nascosta e hub commerciale dell\'entroterra, ben collegata e lontana dai flussi turistici, ricca di cultura e vita comunitaria.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata centralmente nel Salento, leggermente a est, dista solo 18 km dal mare Adriatico. Dista circa 30 km da Lecce. Sebbene la sua vicinanza al Mar Ionio non sia esplicitamente indicata, la sua posizione centrale implica un ragionevole accesso a entrambe le coste. Tranquillità & Atmosfera: Maglie è descritta come una città "where history breathes and away from all the crowded tourist paths" [38], suggesting a more tranquil and authentic atmosphere compared to major tourist hubs. Comunità & Servizi Essenziali: The city offers a rich "mix of history, vibrant culture, and delicious cuisine" [39]. Its historical architecture includes "beautiful Baroque churches and charming piazzas" [39]. Maglie frequently hosts local festivals and events, indicative of a "vibrant community spirit" [39]. It is considered "one of the best-connected towns, especially if you're starting from Lecce" [37]. Bus connections are available to Lecce, Santa Cesarea Terme, Castro, and Tricase [18, 32]. Livello Turistico & Impatto: Maglie is defined as a "hidden gem" [39] and is explicitly "away from all the crowded tourist paths" [38], indicating a lower tourist impact and a more genuine local experience.`,
+                pros: ["Offre una vita locale autentica con un vivace spirito comunitario", "Ricca storia e cultura", "Una buona gamma di servizi e una posizione strategica per esplorare la regione, essendo meno influenzata dal turismo di massa."],
+                cons: ["Non direttamente sul mare, richiedendo un breve viaggio in auto per l'accesso alla spiaggia."],
+                housing_price_rating: "8/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Maglie",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Maglie"
+            },
+            {
+                id: 'tricase',
+                name: 'Tricase',
+                scores: { tranquility: 8, sea: 9, services: 5 },
+                short_desc: 'Località tranquilla sulla costa adriatica, con un\'atmosfera autentica e un bel porto, ideale per chi cerca una connessione con la vita locale.',
+                full_desc: `Posizione & Vicinanza al Mare: Tricase si trova lungo la costa adriatica del Salento. È una delle tre località principali menzionate in un tour che include Specchia and Porto Tricase & Marina Serra, suggesting a coastal or very close to it location. Tranquillità & Atmosfera: Le descrizioni degli immobili a Tricase often emphasize "tranquility" and "comfort". The mention of "daily life in Salento with our family, friends and keeping it local" suggests an authentic and less hectic atmosphere. Comunità & Servizi Essenziali: Available information does not specifically detail the full range of essential services or year-round community life. However, the presence of "Porto Tricase" implies a harbor and associated services. The mention of "family home" and "friends" indicates an established community. Livello Turistico & Impatto: It is not among the most frequently cited towns as a mass tourist destination, which could indicate a lower tourist impact and greater tranquility compared to Gallipoli or Otranto.`,
+                pros: ["Offre un ambiente tranquillo e autentico", "Con una forte connessione alla vita locale e alla vicinanza alla costa adriatica", "Perfetto per chi cerca un luogo dove godersi la vita e rilassarsi", "Molto vicina alla splendida località di tricase porto"],
+                cons: ["Può risultare a volte noioso essendo che durante la stagione c’è molta più vita rispetto all’inverno", "La macchina è essenziale per spostarsi e godere delle città vicine o del mare."],
+                housing_price_rating: "7/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Tricase",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Tricase"
+            },
+            {
+                id: 'ruffano',
+                name: 'Ruffano',
+                scores: { tranquility: 9, sea: 4, services: 4 },
+                short_desc: 'Rifugio tranquillo nel cuore del Salento, un pittoresco villaggio con servizi locali e una posizione ideale per raggiungere entrambe le coste.',
+                full_desc: `Posizione & Vicinanza al Mare: Situata al centro del Salento, Ruffano dista circa 19 km dal mare, sia quello Ionio che quello Adriatico. Questa posizione centrale la rende una base ideale per esplorare le spiagge di entrambe le coste, permettendo di scegliere in base alle condizioni del vento. Tranquillità & Atmosfera: Ruffano è descritta come una località che offre "an unforgettable holiday experience" and a "peaceful retreat". The mention of "picturesque village" and "peaceful retreat" suggests a serene atmosphere, especially off-season. Comunità & Servizi Essenziali: The town offers a "heart of local culture" with "lively cafes and shops". Public markets and local activities are present. Ruffano is close to towns like Ugento (6 miles) and Taurisano (3 miles), which offer additional services and activities. Livello Turistico & Impatto: Although it attracts visitors, especially in summer, it is considered a "peaceful retreat" compared to more crowded places. Its inland location helps maintain a less mass-touristy character.`,
+                pros: ["Elevata tranquillità", "Posizione strategica per accedere a entrambe le coste", "Buona offerta di servizi locali e un'atmosfera autentica."],
+                cons: ["Non direttamente sul mare, richiedendo un breve viaggio per le spiagge", "Può risultare un comune troppo piccolo e isolato nonostante la sua bellezza", "Potrebbe essere a tratti noioso."],
+                housing_price_rating: "6.5/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Ruffano",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Ruffano"
+            },
+            {
+                id: 'santa_cesarea',
+                name: 'Santa Cesarea T.',
+                scores: { tranquility: 6, sea: 10, services: 3 },
+                short_desc: 'Famosa per le sue terme e la costa rocciosa spettacolare. Molto popolare e vivace d\'estate, ma con poche spiagge sabbiose.',
+                full_desc: `Posizione & Vicinanza al Mare: Santa Cesarea Terme è una città affascinante situata sulla costa orientale del Salento, in Puglia. È un centro idrotermale con le sue terme tra le più note e apprezzate in Puglia. La costa è alta e rocciosa, con fondali profondi, rendendo la balneazione meno adatta ai bambini, ma offre un mare cristallino e fondali spettacolari. Non ci sono spiagge sabbiose dirette, ma i lidi sono spesso dotati di piscine. La Baia di Porto Miggiano, con una piccola spiaggia sabbiosa, è nelle vicinanze. Tranquillità & Atmosfera: Sebbene sia un centro termale e turistico, la tranquillità può variare stagionalmente. È possibile godere di passeggiate tranquille nel centro o lungo il lungomare. Comunità & Servizi Essenziali: La città è famosa per le sue acque termali con proprietà curative per patologie reumatiche, dermatologiche e respiratorie. Le terme sono aperte da maggio a novembre. Offre numerose attività ricreative come gite in barca, snorkeling e immersioni. La città vanta anche ville nobiliari e la Chiesa Madre del Sacro Cuore. Offre una vivace vita notturna con bar sulla spiaggia, cocktail bar e beach club, oltre a discoteche rinomate. È collegata da autobus a Maglie, Castro e Otranto. Livello Turistico & Impatto: È una destinazione turistica molto popolare. L'estate è il periodo ideale per godere del mare e delle terme, ma primavera e autunno offrono un clima piacevole e meno folla.`,
+                pros: ["Accesso a terme curative", "Mare cristallino con fondali spettacolari", "Vivace vita notturna e un'offerta turistica diversificata", "Vicinanza a Castro e Otranto."],
+                cons: ["Mancanza di spiagge sabbiose dirette", "Fondali profondi non ideali per bambini", "Può essere affollata in alta stagione", "Le informazioni sui servizi essenziali per i residenti al di fuori della stagione turistica sono limitate."],
+                housing_price_rating: "8/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Santa_Cesarea_Terme",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Santa+Cesarea"
+            },
+            {
+                id: 'castro',
+                name: 'Castro',
+                scores: { tranquility: 5, sea: 10, services: 4 },
+                short_desc: 'Incantevole borgo medievale a picco sul mare Adriatico, ideale per amanti delle immersioni e della storia, con costa rocciosa.',
+                full_desc: `Posizione & Vicinanza al Mare: Castro è un borgo medievale situato sulla costa adriatica, a 45 km from Lecce and 15 km from Otranto. It is composed of Castro Alta (the ancient village with breathtaking views) and Castro Marina (the lower part with the port and small coves). The coast is characterized by rocks and deep waters, there are no sandy beaches. Tranquillità & Atmosfera: Castro offers a special and enchanting atmosphere. Although it is a tourist destination, its character as a fishing village and its rocky conformation make it less subject to mass tourism than sandy beaches. Comunità & Servizi Essenziali: The city boasts a Renaissance castle housing an archaeological museum and a 12th-century Cathedral. The port of Castro Marina maintains the distinctive shape of fishing villages. It is an ideal place for diving and sea cave enthusiasts (Grotta Zinzulusa, Grotta Romanelli). It offers excellent typical food. It is connected by bus to Maglie, Santa Cesarea Terme, and Otranto. Livello Turistico & Impatto: Castro is a tourist destination, but its rocky and historical character distinguishes it from purely seaside resorts. Tourist influx is significant in summer, but its structure and offerings make it a different experience.`,
+                pros: ["Rich history and medieval architecture", "Crystal clear sea ideal for diving and snorkeling", "Unique sea caves", "Authentic fishing village atmosphere and excellent food."],
+                cons: ["Mancanza di spiagge sabbiose, il che potrebbe non essere ideale per chi cerca la sabbia o per famiglie con bambini piccoli", "Informazioni dettagliate sui servizi essenziali per i residenti al di fuori della stagione turistica sono limitate."],
+                housing_price_rating: "9/10",
+                wikipedia_url: "https://it.wikipedia.org/wiki/Castro_(Italia)",
+                photo_url: "https://placehold.co/400x200/B0D9B1/000000?text=Castro"
+            }
+        ];
+
+        const criteria = [
+            { id: 'tranquility', name: 'Tranquillità', icon: '🕊️', labels: {low: 'Poca', high: 'Molta'} },
+            { id: 'sea', name: 'Vicinanza al Mare', icon: '🌊', labels: {low: 'Lontano', high: 'Vicino'} },
+            { id: 'services', name: 'Servizi', icon: '🛍️', labels: {low: 'Pochi', high: 'Molti'} },
+            { id: 'housing_price', name: 'Costo Abitazioni', icon: '💶', labels: {low: 'Basso', high: 'Alto'} }
+        ];
+
+        const citiesGrid = document.getElementById('cities-grid');
+        let cityChart = null;
+        let currentCityData = null;
+
+        function renderCities() {
+            citiesGrid.innerHTML = '';
+            citiesData.forEach(city => {
+                const card = document.createElement('div');
+                card.className = 'secondary-bg rounded-xl p-5 card-shadow transform hover:-translate-y-1 transition-transform duration-200 cursor-pointer';
+                card.dataset.cityId = city.id;
+
+                const numericalPriceRating = parseFloat(city.housing_price_rating.split('/')[0]);
+
+                card.innerHTML = `
+                    <img src="${city.photo_url}" alt="Image of ${city.name}" class="w-full h-32 object-cover rounded-t-xl mb-4">
+                    <h3 class="text-xl font-bold accent-text">${city.name}</h3>
+                    <p class="text-gray-600 mt-2 text-sm">${city.short_desc}</p>
+                    <div class="mt-4 flex justify-between items-center text-sm font-semibold text-gray-700">
+                        <span>🕊️ ${city.scores.tranquility}/10</span>
+                        <span>🌊 ${city.scores.sea}/10</span>
+                        <span>🛍️ ${city.scores.services}/10</span>
+                        <span>💶 ${numericalPriceRating}/10</span>
+                    </div>
+                    <div class="mt-4 flex justify-end items-center">
+                         <span class="text-xs font-medium text-white accent-bg px-2 py-1 rounded-full">Scopri di più</span>
+                    </div>
+                `;
+                card.addEventListener('click', () => openModal(city.id));
+                citiesGrid.appendChild(card);
+            });
+        }
+
+        function openModal(cityId) {
+            const city = citiesData.find(c => c.id === cityId);
+            if (!city) return;
+
+            currentCityData = city;
+
+            const modalTitleEl = document.getElementById('modalTitle');
+            if (modalTitleEl) {
+                modalTitleEl.textContent = city.name;
+            }
+            
+            const modalDescriptionEl = document.getElementById('modalDescription');
+            if (modalDescriptionEl) {
+                modalDescriptionEl.textContent = city.short_desc; 
+            }
+            
+            const prosList = document.getElementById('modalPros');
+            if (prosList) {
+                prosList.innerHTML = '';
+                city.pros.forEach(pro => {
+                    const li = document.createElement('li');
+                    li.textContent = pro;
+                    prosList.appendChild(li);
+                });
+            }
+
+            const consList = document.getElementById('modalCons');
+            if (consList) {
+                consList.innerHTML = '';
+                city.cons.forEach(con => {
+                    const li = document.createElement('li');
+                    li.textContent = con;
+                    consList.appendChild(li);
+                });
+            }
+
+            const modalHousingPriceEl = document.getElementById('modalHousingPrice');
+            if (modalHousingPriceEl) {
+                modalHousingPriceEl.textContent = city.housing_price_rating;
+            }
+            
+            const modalScoresEl = document.getElementById('modalScores');
+            if (modalScoresEl) {
+                const numericalPriceRating = parseFloat(city.housing_price_rating.split('/')[0]);
+
+                modalScoresEl.innerHTML = `
+                    <span class="mr-3">🕊️ ${city.scores.tranquility}/10</span>
+                    <span class="mr-3">🌊 ${city.scores.sea}/10</span>
+                    <span class="mr-3">🛍️ ${city.scores.services}/10</span>
+                    <span>💶 ${numericalPriceRating}/10</span>
+                `;
+            }
+
+            const modalEl = document.getElementById('cityModal');
+            if (modalEl) {
+                modalEl.classList.remove('opacity-0', 'pointer-events-none');
+                modalEl.querySelector('.modal-content').classList.remove('scale-95');
+            }
+            
+            const cityChartCanvas = document.getElementById('cityChart');
+            if (cityChartCanvas) {
+                renderChart(city);
+            } else {
+                console.error("Canvas element with ID 'cityChart' not found.");
+            }
+
+            const wikipediaLinkEl = document.getElementById('wikipediaLink');
+            if (wikipediaLinkEl && city.wikipedia_url) {
+                wikipediaLinkEl.href = city.wikipedia_url;
+                wikipediaLinkEl.classList.remove('hidden');
+            } else if (wikipediaLinkEl) {
+                wikipediaLinkEl.classList.add('hidden');
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('cityModal');
+            if (modal) {
+                modal.classList.add('opacity-0');
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('pointer-events-none');
+                }, 250);
+            }
+        }
+        
+        function renderChart(city) {
+            const ctx = document.getElementById('cityChart').getContext('2d');
+            
+            const numericalPriceRating = parseFloat(city.housing_price_rating.split('/')[0]);
+
+            const data = {
+                labels: criteria.map(c => c.name),
+                datasets: [{
+                    label: city.name,
+                    data: [
+                        city.scores.tranquility,
+                        city.scores.sea,
+                        city.scores.services,
+                        numericalPriceRating
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(82, 121, 111, 0.2)',
+                    borderColor: 'rgb(82, 121, 111)',
+                    pointBackgroundColor: 'rgb(82, 121, 111)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(82, 121, 111)'
+                }]
+            };
+
+            const config = {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: {
+                        line: {
+                            borderWidth: 3
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: false
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                color: '#4B5563'
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                beginAtZero: true
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            };
+            
+            if (cityChart) {
+                cityChart.destroy();
+            }
+            cityChart = new Chart(ctx, config);
+        }
+
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        document.getElementById('cityModal').addEventListener('click', (e) => {
+            if (e.target.id === 'cityModal') {
+                closeModal();
+            }
+        });
+        
+        renderCities();
+
+    </script>
+</body>
+</html>
